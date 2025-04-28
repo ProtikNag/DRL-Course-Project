@@ -97,7 +97,7 @@ def compute_utilization(placed_items, container_dims=None):
         container_dims = (CONTAINER_LENGTH, CONTAINER_WIDTH, CONTAINER_HEIGHT)
 
     L, W, H = container_dims
-    container_volume = L * W * H
+    container_volume = (L * W * H) / 1000
     total_volume = sum(item['l'] * item['w'] * item['h'] for item in placed_items)
     return total_volume / container_volume
 

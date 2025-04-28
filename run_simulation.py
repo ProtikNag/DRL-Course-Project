@@ -5,6 +5,7 @@ import os
 import random
 import logging
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 from config import CONTAINER_LENGTH, CONTAINER_WIDTH, CONTAINER_HEIGHT, GRID_DIMS, POOL_KERNEL_SIZE, ORIENTATIONS, GRID_RESOLUTION
@@ -50,20 +51,12 @@ def get_cuboid_faces(x, y, z, l, w, h):
 
 
 def update_multi_views(ax1, ax2, ax3, ax4, placed_items, container_dims):
-    """
-    Update all four subplots:
-      - ax1: 3D view.
-      - ax2: Top (XY) view.
-      - ax3: YZ view.
-      - ax4: XZ view.
-    Each placed item is drawn as a cuboid with its assigned random color (opaque).
-    """
     L, W, H = container_dims
     L /= GRID_RESOLUTION
     W /= GRID_RESOLUTION
     H /= GRID_RESOLUTION
 
-    # --- 3D view ---
+    # 3D View
     ax1.clear()
     container_corners = np.array([
         [0, 0, 0], [L, 0, 0], [L, W, 0], [0, W, 0],
@@ -76,19 +69,24 @@ def update_multi_views(ax1, ax2, ax3, ax4, placed_items, container_dims):
         ax1.plot3D(*zip(container_corners[e[0]], container_corners[e[1]]), color="black", linewidth=1)
     for item in placed_items:
         faces = get_cuboid_faces(item['x'], item['y'], item['z'], item['l'], item['w'], item['h'])
-        # Use the stored color (or default to cyan) with alpha set to 1.0.
         cuboid = Poly3DCollection(faces, facecolors=item.get("color", "cyan"),
                                   edgecolors="black", linewidths=1, alpha=1.0)
         ax1.add_collection3d(cuboid)
-    ax1.set_xlim([0, L*GRID_RESOLUTION])
-    ax1.set_ylim([0, W*GRID_RESOLUTION])
-    ax1.set_zlim([0, H*GRID_RESOLUTION])
+    ax1.set_xlim([0, L])
+    ax1.set_ylim([0, W])
+    ax1.set_zlim([0, H])
     ax1.set_title("3D View")
+    ax1.set_xlabel("X (cm)")
+    ax1.set_ylabel("Y (cm)")
+    ax1.set_zlabel("Z (cm)")
+    ax1.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"{int(x * GRID_RESOLUTION)}"))
+    ax1.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y, pos: f"{int(y * GRID_RESOLUTION)}"))
+    ax1.zaxis.set_major_formatter(ticker.FuncFormatter(lambda z, pos: f"{int(z * GRID_RESOLUTION)}"))
 
-    # --- Top (XY) view ---
+    # Top (XY) View
     ax2.clear()
-    ax2.set_xlim([0, L*GRID_RESOLUTION])
-    ax2.set_ylim([0, W*GRID_RESOLUTION])
+    ax2.set_xlim([0, L])
+    ax2.set_ylim([0, W])
     ax2.set_aspect('equal')
     rect_container = plt.Rectangle((0, 0), L, W, fill=False, color="black", linewidth=1)
     ax2.add_patch(rect_container)
@@ -100,11 +98,13 @@ def update_multi_views(ax1, ax2, ax3, ax4, placed_items, container_dims):
     ax2.set_xlabel("X (cm)")
     ax2.set_ylabel("Y (cm)")
     ax2.set_title("Top (XY) View")
+    ax2.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"{int(x * GRID_RESOLUTION)}"))
+    ax2.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y, pos: f"{int(y * GRID_RESOLUTION)}"))
 
-    # --- YZ view ---
+    # YZ View
     ax3.clear()
-    ax3.set_xlim([0, W*GRID_RESOLUTION])
-    ax3.set_ylim([0, H*GRID_RESOLUTION])
+    ax3.set_xlim([0, W])
+    ax3.set_ylim([0, H])
     ax3.set_aspect('equal')
     rect_container_yz = plt.Rectangle((0, 0), W, H, fill=False, color="black", linewidth=1)
     ax3.add_patch(rect_container_yz)
@@ -116,11 +116,13 @@ def update_multi_views(ax1, ax2, ax3, ax4, placed_items, container_dims):
     ax3.set_xlabel("Y (cm)")
     ax3.set_ylabel("Z (cm)")
     ax3.set_title("YZ View")
+    ax3.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"{int(x * GRID_RESOLUTION)}"))
+    ax3.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y, pos: f"{int(y * GRID_RESOLUTION)}"))
 
-    # --- XZ view ---
+    # XZ View
     ax4.clear()
-    ax4.set_xlim([0, L*GRID_RESOLUTION])
-    ax4.set_ylim([0, H*GRID_RESOLUTION])
+    ax4.set_xlim([0, L])
+    ax4.set_ylim([0, H])
     ax4.set_aspect('equal')
     rect_container_xz = plt.Rectangle((0, 0), L, H, fill=False, color="black", linewidth=1)
     ax4.add_patch(rect_container_xz)
@@ -132,6 +134,8 @@ def update_multi_views(ax1, ax2, ax3, ax4, placed_items, container_dims):
     ax4.set_xlabel("X (cm)")
     ax4.set_ylabel("Z (cm)")
     ax4.set_title("XZ View")
+    ax4.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"{int(x * GRID_RESOLUTION)}"))
+    ax4.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y, pos: f"{int(y * GRID_RESOLUTION)}"))
 
     plt.tight_layout()
     plt.draw()
@@ -148,6 +152,9 @@ def visualize_all_views(placed_items, container_dims, save_path=None):
     Each item is drawn with its random color (opaque).
     """
     L, W, H = container_dims
+    L /= GRID_RESOLUTION
+    W /= GRID_RESOLUTION
+    H /= GRID_RESOLUTION
     fig = plt.figure(figsize=(16, 12))
 
     # --- 3D View ---
@@ -225,61 +232,57 @@ def visualize_all_views(placed_items, container_dims, save_path=None):
     plt.show(block=True)
 
 
-def run_simulation_3d(checkpoint_path, num_test_items=20):
+def run_simulation_3d(checkpoint_path, num_test_items=20, visualize=True):
     """
-    Run one simulation episode using the trained PPO agent and update an interactive multi-view figure.
-    After each placement, update four views: 3D, Top (XY), YZ, and XZ.
+    Run one simulation episode using the trained agent.
+    If visualize=True, it shows multi-views.
+    Returns: (number of items placed, utilization ratio)
     """
     container_dims = (CONTAINER_LENGTH, CONTAINER_WIDTH, CONTAINER_HEIGHT)
     env = BinPackingEnv()
 
-    # Calculate pooled state dimension.
     input_dim = np.prod(GRID_DIMS) + 3
     max_actions = 20
 
     agent = DQN(input_dim, max_actions)
     if not os.path.exists(checkpoint_path):
         logging.error("Checkpoint not found at %s", checkpoint_path)
-        return
+        exit(1)
     agent.load_state_dict(torch.load(checkpoint_path))
     agent.eval()
-    logging.info("Checkpoint loaded. Running 3D simulation test episode...")
+    logging.info("Checkpoint loaded. Running 3D simulation...")
 
     PREDEFINED_ITEM_SET2 = [
-        (50, 100, 20),  # Red
-        (30, 90, 10),  # Brown
-        (50, 50, 50),  # Blue
-        (60, 60, 10),  # Green
+        (30, 40, 20),  # Orange
+        (30, 50, 20),  # Blue
+        (40, 50, 20),  # Purple
+        (30, 50, 40),  # Green
+        (40, 50, 30),  # Light blue
     ]
     predefined_items = [tuple([int(i / GRID_RESOLUTION) for i in item]) for item in PREDEFINED_ITEM_SET2]
 
-    # Generate test items.
-    test_items = []
     test_items = [random.choice(predefined_items) for _ in range(num_test_items)]
 
     placed_items = []
     extreme_points = [(0, 0, 0)]
     state = env.reset()
 
-    # Set up interactive multi-view figure.
-    plt.ion()
-    fig = plt.figure(figsize=(16, 12))
-    ax1 = fig.add_subplot(221, projection='3d')
-    ax2 = fig.add_subplot(222)
-    ax3 = fig.add_subplot(223)
-    ax4 = fig.add_subplot(224)
-
-    # Initial update of all views.
-    update_multi_views(ax1, ax2, ax3, ax4, placed_items, container_dims)
+    if visualize:
+        plt.ion()
+        fig = plt.figure(figsize=(16, 12))
+        ax1 = fig.add_subplot(221, projection='3d')
+        ax2 = fig.add_subplot(222)
+        ax3 = fig.add_subplot(223)
+        ax4 = fig.add_subplot(224)
+        update_multi_views(ax1, ax2, ax3, ax4, placed_items, container_dims)
 
     for idx, item in enumerate(test_items):
         agent.current_item_dims = item
         feasible_actions = env.get_available_actions(item, extreme_points)
         dims = (item[1], item[0], item[2])
-        # logging.info("feasible actions in run_simulation file %s.", feasible_actions)
-        logging.info("Test Episode: item dimenstion at step %d; with dims %s.", idx, dims)
+
         if not feasible_actions:
-            logging.info("Test Episode: No feasible actions at step %d; ending episode.", idx)
+            logging.info("No feasible actions at step %d", idx)
             break
 
         state_tensor = get_state_tensor(state, item, GRID_DIMS)
@@ -293,10 +296,8 @@ def run_simulation_3d(checkpoint_path, num_test_items=20):
         placement_success = env.place_item(chosen_action[0], chosen_action[1], chosen_action[2],
                                            dims[0], dims[1], dims[2])
         if not placement_success:
-            logging.warning("Test Episode: Placement failed at step %d.", idx)
+            logging.warning("Placement failed at step %d", idx)
             continue
-        else:
-            logging.info("Test Episode: Placed item %d at %s with dims %s.", idx, chosen_action, dims)
 
         new_item = {
             'x': chosen_action[0],
@@ -312,21 +313,44 @@ def run_simulation_3d(checkpoint_path, num_test_items=20):
         extreme_points = priority_sort_extreme_points(item, extreme_points, env, placed_items)
         state = env.get_state()
 
-        # Update all views interactively.
-        update_multi_views(ax1, ax2, ax3, ax4, placed_items, container_dims)
+        if visualize:
+            update_multi_views(ax1, ax2, ax3, ax4, placed_items, container_dims)
 
-    container_dims = (CONTAINER_LENGTH, CONTAINER_WIDTH, CONTAINER_HEIGHT)
+    if visualize:
+        plt.ioff()
+        visualize_all_views(placed_items, container_dims, save_path="final_all_views.png")
+
     utilization_ratio = compute_utilization(placed_items, container_dims)
+    num_items_placed = len(placed_items)
 
-    logging.info(f"Total Utilization Ratio: {utilization_ratio:.4f}")
-    print(f"Total Utilization Ratio: {utilization_ratio:.4f}")
-
-    plt.ioff()
-    # After simulation, display the final multi-view figure.
-    visualize_all_views(placed_items, container_dims, save_path="final_all_views.png")
-    logging.info("3D Simulation test episode complete. Final multi-view figure saved to final_all_views.png.")
+    return num_items_placed, utilization_ratio
 
 
 if __name__ == "__main__":
-    checkpoint_path = "model_weights/dqn_binpacking.pth"  # Adjust as needed.
-    run_simulation_3d(checkpoint_path, num_test_items=100)
+    checkpoint_path = "model_weights/dqn_binpacking.pth"
+
+    num_runs = 25
+    total_items = 0
+    total_utilization = 0.0
+
+    visualize = False
+
+    for run in range(num_runs):
+        if run > 0:
+            visualize = False
+
+        logging.info(f"Starting run {run+1}/{num_runs}...")
+        num_items, utilization = run_simulation_3d(checkpoint_path, num_test_items=500, visualize=visualize)
+
+        logging.info(f"Run {run+1}: Items Placed = {num_items}, Utilization Ratio = {utilization:.4f}")
+        total_items += num_items
+        total_utilization += utilization
+
+    avg_items = total_items / num_runs
+    avg_utilization = total_utilization / num_runs
+
+    print("=" * 60)
+    print(f"Average over {num_runs} runs:")
+    print(f"- Average Number of Items Placed: {avg_items:.2f}")
+    print(f"- Average Utilization Ratio: {avg_utilization * 100:.4f}%")
+    print("=" * 60)

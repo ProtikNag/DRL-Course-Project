@@ -21,7 +21,7 @@ def get_state_tensor(state, item):
 
 
 def dqn_train(num_episodes=500, batch_size=64, lr=1e-3, gamma=0.99,
-              epsilon_start=1.0, epsilon_decay=0.995, epsilon_min=0.05):
+              epsilon_start=1.0, epsilon_decay=0.99, epsilon_min=0.05):
     env = BinPackingEnv()
     input_dim = np.prod(GRID_DIMS) + 3
     max_actions = 20
@@ -55,9 +55,15 @@ def dqn_train(num_episodes=500, batch_size=64, lr=1e-3, gamma=0.99,
         failure_counter = 0
         max_failures = 5
 
-        for step in range(500):
-            item = tuple(np.random.randint([20, 40, 10], [40, 50, 20]))
-            # item = random.choice(item)
+        for step in range(100):
+            PREDEFINED_ITEM_SET1 = [
+                (3, 4, 2),  # Orange
+                (3, 5, 2),  # Blue
+                (4, 5, 2),  # Purple
+                (3, 5, 4),  # Green
+                (4, 5, 3),  # Light blue
+            ]
+            item = random.choice(PREDEFINED_ITEM_SET1)
             item_volume = np.prod(item)
 
             eps = generate_extreme_points(placed_items, GRID_DIMS)
