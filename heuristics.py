@@ -115,6 +115,34 @@ def priority_sort_extreme_points(item_dims, extreme_points, env, placed_items):
     return sorted_extreme_points
 
 
+def sort_extreme_points_flatness(extreme_points, env):
+    """
+    Sort extreme points preferring low z, flatness, and centrality.
+    """
+    sorted_eps = []
+    grid = env.grid
+    grid_L, grid_W, grid_H = grid.shape
+    center_x, center_y = grid_L // 2, grid_W // 2
+
+    for ep in extreme_points:
+        x, y, z = ep
+        flatness = 0
+        # Count how many adjacent x-y cells are empty (state 1 or 2)
+        for dx, dy in [(-1,0), (1,0), (0,-1), (0,1)]:
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < grid_L and 0 <= ny < grid_W:
+                if grid[nx, ny, z] in (1, 2):  # Empty or supported
+                    flatness += 1
+
+        center_bonus = - (abs(x - center_x) + abs(y - center_y)) / (grid_L + grid_W)  # normalized distance
+        score = -z + 0.5 * flatness + 0.1 * center_bonus
+        sorted_eps.append((ep, score))
+
+    # Sort descending: best score first
+    sorted_eps.sort(key=lambda x: x[1], reverse=True)
+    return [ep for ep, _ in sorted_eps]
+
+
 #########################
 # DBLF Heuristic Functions
 #########################

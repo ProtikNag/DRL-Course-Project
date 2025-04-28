@@ -2,13 +2,14 @@ import numpy as np
 import torch
 import torch.optim as optim
 from env import BinPackingEnv
-from heuristics import generate_extreme_points, priority_sort_extreme_points
+from heuristics import generate_extreme_points, priority_sort_extreme_points, sort_extreme_points_flatness
 from dqn_agent import DQN
 from replay_buffer import ReplayBuffer
 from config import GRID_DIMS, ORIENTATIONS
 import matplotlib.pyplot as plt
 import csv
 import os
+import random
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -19,17 +20,17 @@ def get_state_tensor(state, item):
     return torch.tensor(np.concatenate([grid_flat, item_norm]), dtype=torch.float32)
 
 
-def dqn_train(num_episodes=100, batch_size=32, lr=1e-3, gamma=0.99,
+def dqn_train(num_episodes=500, batch_size=64, lr=1e-3, gamma=0.99,
               epsilon_start=1.0, epsilon_decay=0.995, epsilon_min=0.05):
     env = BinPackingEnv()
     input_dim = np.prod(GRID_DIMS) + 3
-    max_actions = 10
+    max_actions = 20
 
     dqn = DQN(input_dim, max_actions).to(device)
     target_dqn = DQN(input_dim, max_actions).to(device)
     target_dqn.load_state_dict(dqn.state_dict())
     optimizer = optim.Adam(dqn.parameters(), lr=lr)
-    buffer = ReplayBuffer(500)
+    buffer = ReplayBuffer(1000)
 
     epsilon = epsilon_start
 
@@ -51,17 +52,27 @@ def dqn_train(num_episodes=100, batch_size=32, lr=1e-3, gamma=0.99,
         placed_items = []
         used_volume = 0
 
-        for step in range(100):
-            item = tuple(np.random.randint([5, 5, 3], [10, 10, 6]))
+        failure_counter = 0
+        max_failures = 5
+
+        for step in range(500):
+            item = tuple(np.random.randint([20, 40, 10], [40, 50, 20]))
+            # item = random.choice(item)
             item_volume = np.prod(item)
 
             eps = generate_extreme_points(placed_items, GRID_DIMS)
             sorted_eps = priority_sort_extreme_points(item, eps, env, placed_items)
+            # sorted_eps = sort_extreme_points_flatness(eps, env)
             actions = env.get_available_actions(item, sorted_eps)
             if not actions:
-                break
+                failure_counter += 1
+                if failure_counter >= max_failures:
+                    break
+                continue
 
-            actions = actions[:max_actions]
+            # actions = actions[:max_actions]
+            if len(actions) > max_actions:
+                actions = random.sample(actions, max_actions)
             state_tensor = get_state_tensor(state, item).to(device)
 
             if np.random.rand() < epsilon:
@@ -75,7 +86,9 @@ def dqn_train(num_episodes=100, batch_size=32, lr=1e-3, gamma=0.99,
             dims = (item[1], item[0], item[2]) if ori == (0, 0, 90) else item
             success = env.place_item(x, y, z, *dims)
 
-            reward = 1.0 if success else -1.0
+            # reward = 1.0 if success else -1.0
+            total_container_volume = GRID_DIMS[0] * GRID_DIMS[1] * GRID_DIMS[2]
+            reward = (np.prod(dims) / total_container_volume) * 10 if success else -1.0
             next_state = env.get_state()
             done = not success
 
@@ -94,7 +107,9 @@ def dqn_train(num_episodes=100, batch_size=32, lr=1e-3, gamma=0.99,
 
                 q_vals = dqn(s_batch).gather(1, a_batch.unsqueeze(1)).squeeze()
                 with torch.no_grad():
-                    q_next = target_dqn(s2_batch).max(1)[0]
+                    # q_next = target_dqn(s2_batch).max(1)[0]
+                    next_actions = dqn(s2_batch).argmax(1)
+                    q_next = target_dqn(s2_batch).gather(1, next_actions.unsqueeze(1)).squeeze()
                 q_target = r_batch + gamma * q_next * (1 - d_batch)
                 loss = (q_vals - q_target).pow(2).mean()
 
@@ -103,7 +118,9 @@ def dqn_train(num_episodes=100, batch_size=32, lr=1e-3, gamma=0.99,
                 optimizer.step()
 
             if done:
-                break
+                failure_counter += 1
+                if failure_counter >= max_failures:
+                    break
 
         if ep % 10 == 0:
             target_dqn.load_state_dict(dqn.state_dict())
@@ -121,16 +138,27 @@ def dqn_train(num_episodes=100, batch_size=32, lr=1e-3, gamma=0.99,
 
     torch.save(dqn.state_dict(), "model_weights/dqn_binpacking.pth")
 
-    # Plot reward trend
-    plt.plot(episode_rewards, label='Reward')
-    plt.plot(volume_utilizations, label='Volume Utilization')
-    plt.xlabel("Episode")
-    plt.ylabel("Score / Util")
-    plt.title("DQN Training Progress")
-    plt.legend()
-    plt.grid(True)
+    # Plot reward and utilization separately
+    fig, axes = plt.subplots(2, 1, figsize=(10, 10))
+
+    # Reward plot
+    axes[0].plot(episode_rewards, label='Episode Reward', color='blue')
+    axes[0].set_xlabel('Episode')
+    axes[0].set_ylabel('Reward')
+    axes[0].set_title('Training Reward Progress')
+    axes[0].grid(True)
+    axes[0].legend()
+
+    # Utilization plot
+    axes[1].plot(volume_utilizations, label='Volume Utilization', color='green')
+    axes[1].set_xlabel('Episode')
+    axes[1].set_ylabel('Utilization')
+    axes[1].set_title('Volume Utilization Progress')
+    axes[1].grid(True)
+    axes[1].legend()
+
     plt.tight_layout()
-    plt.savefig("training_plot.png")
+    plt.savefig("training_reward_utilization.png")
     plt.show()
 
 

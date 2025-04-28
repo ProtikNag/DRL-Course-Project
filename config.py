@@ -1,12 +1,13 @@
 # config.py
+RANDOM_SEED = 45
 
 # Container dimensions (in centimeters)
-CONTAINER_LENGTH = 40   # L
-CONTAINER_WIDTH  = 30   # W
-CONTAINER_HEIGHT = 30   # H
+CONTAINER_LENGTH = 400   # L
+CONTAINER_WIDTH  = 300   # W
+CONTAINER_HEIGHT = 200   # H
 
 # Grid resolution (each cell represents 1 cm)
-GRID_RESOLUTION = 1
+GRID_RESOLUTION = 10
 
 # Derived grid dimensions based on container dimensions and resolution.
 # For a container of 400x300x200 and resolution 1 cm, the grid is:
@@ -47,11 +48,13 @@ MU    = 0.3        # Penalty constant
 TAU   = 0.2        # Step reward constant
 OMEGA = 0.8        # Step reward constant
 
-# PPO Hyperparameters
-PPO_LEARNING_RATE = 0.0003
-PPO_BATCH_SIZE = 256
-PPO_DISCOUNT = 0.99
-PPO_GAE_LAMBDA = 0.95
-
 # Additional constants for heuristics
 NEIGHBOR_BONUS = 3
+
+PREDEFINED_ITEM_SET1 = [
+    (30, 40, 20),  # Orange
+    (30, 50, 20),  # Blue
+    (40, 50, 20),  # Purple
+    (30, 50, 40),  # Green
+    (40, 50, 30),  # Light blue
+]
