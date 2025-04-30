@@ -177,6 +177,12 @@ def visualize_all_views(placed_items, container_dims, save_path=None):
     ax1.set_ylim([0, W])
     ax1.set_zlim([0, H])
     ax1.set_title("3D View")
+    ax1.set_xlabel("X (cm)")
+    ax1.set_ylabel("Y (cm)")
+    ax1.set_zlabel("Z (cm)")
+    ax1.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"{int(x * GRID_RESOLUTION)}"))
+    ax1.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y, pos: f"{int(y * GRID_RESOLUTION)}"))
+    ax1.zaxis.set_major_formatter(ticker.FuncFormatter(lambda z, pos: f"{int(z * GRID_RESOLUTION)}"))
 
     # --- Top (XY) View ---
     ax2 = fig.add_subplot(222)
@@ -193,6 +199,8 @@ def visualize_all_views(placed_items, container_dims, save_path=None):
     ax2.set_xlabel("X (cm)")
     ax2.set_ylabel("Y (cm)")
     ax2.set_title("Top (XY) View")
+    ax2.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"{int(x * GRID_RESOLUTION)}"))
+    ax2.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y, pos: f"{int(y * GRID_RESOLUTION)}"))
 
     # --- YZ View ---
     ax3 = fig.add_subplot(223)
@@ -209,6 +217,8 @@ def visualize_all_views(placed_items, container_dims, save_path=None):
     ax3.set_xlabel("Y (cm)")
     ax3.set_ylabel("Z (cm)")
     ax3.set_title("YZ View")
+    ax3.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"{int(x * GRID_RESOLUTION)}"))
+    ax3.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y, pos: f"{int(y * GRID_RESOLUTION)}"))
 
     # --- XZ View ---
     ax4 = fig.add_subplot(224)
@@ -225,6 +235,8 @@ def visualize_all_views(placed_items, container_dims, save_path=None):
     ax4.set_xlabel("X (cm)")
     ax4.set_ylabel("Z (cm)")
     ax4.set_title("XZ View")
+    ax4.xaxis.set_major_formatter(ticker.FuncFormatter(lambda x, pos: f"{int(x * GRID_RESOLUTION)}"))
+    ax4.yaxis.set_major_formatter(ticker.FuncFormatter(lambda y, pos: f"{int(y * GRID_RESOLUTION)}"))
 
     plt.tight_layout()
     if save_path:
@@ -334,6 +346,8 @@ if __name__ == "__main__":
     total_utilization = 0.0
 
     visualize = False
+    utilizations = []  # <--- store all utilization ratios here
+    num_of_placements = []  # <--- store all item counts here
 
     for run in range(num_runs):
         if run > 0:
@@ -346,10 +360,16 @@ if __name__ == "__main__":
         total_items += num_items
         total_utilization += utilization
 
+        utilizations.append(utilization * 100)
+        num_of_placements.append(num_items)
+
     avg_items = total_items / num_runs
     avg_utilization = total_utilization / num_runs
 
     print("=" * 60)
+    print(f"utilization = {utilizations}")
+    print(f"num_of_placements = {num_of_placements}")
+    print("-" * 60)
     print(f"Average over {num_runs} runs:")
     print(f"- Average Number of Items Placed: {avg_items:.2f}")
     print(f"- Average Utilization Ratio: {avg_utilization * 100:.4f}%")
